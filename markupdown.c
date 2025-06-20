@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -333,8 +334,6 @@ static void load_template(void) {
 // XXX/ -> XXX/index.html
 static void generate(char *path) {
   if (is_directory(path)) {
-    struct dirent *dir_entity;
-    DIR *dir = opendir(path);
 
     // create dst_path/index.html
     // fill with optional src_path/index.md
@@ -366,21 +365,18 @@ static void generate(char *path) {
 
     fprintf(out_index, "<nav><ul>\n");
 
-    for (;;) {
-      dir_entity = readdir(dir);
-      if (dir_entity == NULL) {
-        break;
-      }
+    struct dirent **name_list;
+    int n = scandir(path, &name_list, NULL, alphasort);
+    if (n == -1) {
+      printf("can't scan %s\n", path);
+      exit(EXIT_FAILURE);
+    }
 
-      char *name = dir_entity->d_name;
+    for (int i = 0; i < n; i++) {
+      char *name = name_list[i]->d_name;
 
       // ignore hidden files and "." ".."
       if (name[0] == '.') {
-        continue;
-      }
-
-      // files must be markdown
-      if (is_file(name) && !is_markdown(name)) {
         continue;
       }
 
@@ -389,12 +385,23 @@ static void generate(char *path) {
         continue;
       }
 
-      fprintf(out_index, "<li><a href=\"./%s\">%s</a></li>\n", name, name);
-
       char subpath[1024];
       strcpy(subpath, path);
       strcat(subpath, "/");
-      strcat(subpath, dir_entity->d_name);
+      strcat(subpath, name);
+
+      // files must be markdown
+      if (is_file(subpath) && !is_markdown(subpath)) {
+        continue;
+      }
+
+      if (is_file(subpath)) {
+        int name_len = strlen(name) - 3;
+        fprintf(out_index, "<li><a href=\"./%.*s.html\">%s</a></li>\n",
+                name_len, name, name);
+      } else {
+        fprintf(out_index, "<li><a href=\"./%s\">%s/</a></li>\n", name, name);
+      }
 
       generate(subpath);
     }
