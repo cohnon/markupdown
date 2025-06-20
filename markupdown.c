@@ -389,13 +389,7 @@ static void generate(char *path) {
         continue;
       }
 
-      if (is_file(name)) {
-        int name_len = strlen(name) - 3;
-        fprintf(out_index, "<li><a href=\"./%.*s.html\">%.*s</a></li>\n",
-                name_len, name, name_len, name);
-      } else {
-        fprintf(out_index, "<li><a href=\"./%s\">%s/</a></li>\n", name, name);
-      }
+      fprintf(out_index, "<li><a href=\"./%s\">%s</a></li>\n", name, name);
 
       char subpath[1024];
       strcpy(subpath, path);
